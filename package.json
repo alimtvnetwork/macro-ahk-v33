@@ -17,6 +17,8 @@
     "check:no-swallowed-errors:update-baseline": "node scripts/check-no-swallowed-errors.mjs --update-baseline",
     "test:check-no-swallowed-errors": "node --test scripts/__tests__/check-no-swallowed-errors.test.mjs",
     "audit:error-swallow": "node scripts/audit-error-swallow.mjs",
+    "audit:allow-swallow": "node scripts/audit-allow-swallow.mjs",
+    "audit:allow-swallow:report-only": "node scripts/audit-allow-swallow.mjs --report-only",
     "audit:checklist": "node scripts/audit-checklist.mjs",
     "prebuild:clean-verify": "node scripts/prebuild-clean-and-verify.mjs",
     "verify:worktree-fresh": "node scripts/verify-worktree-fresh.mjs",
