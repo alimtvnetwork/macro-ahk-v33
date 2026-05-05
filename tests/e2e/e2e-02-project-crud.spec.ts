@@ -54,6 +54,7 @@ const INTERACTIVE_LOG_PREFIX = '[Options] ── INTERACTIVE ──';
 const INTERACTIVE_TIMEOUT_MS = 15_000;
 const FLOATING_CONTROLLER_SELECTOR = '[data-testid^="floating-controller"]';
 const FLOATING_CONTROLLER_STYLE_ID = 'e2e-disable-floating-controller';
+const OPTIONS_PROJECTS_E2E_QUERY = '?e2eHideFloatingController=1#projects';
 
 /**
  * Seed `marco_onboarding_complete = true` from the service worker AND read it
@@ -210,7 +211,7 @@ async function openProjectsView(context: BrowserContext, extensionId: string): P
 
   // Force #projects in the initial URL so parseHash never picks up a stale
   // section from a prior in-context navigation.
-  await page.goto(`${optionsUrl(extensionId)}#projects`);
+  await page.goto(`${optionsUrl(extensionId)}${OPTIONS_PROJECTS_E2E_QUERY}`);
   await page.waitForLoadState('domcontentloaded');
 
   // Stage 2: re-seed from the page context to defeat MV3 SW teardown races.
