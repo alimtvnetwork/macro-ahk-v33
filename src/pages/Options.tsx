@@ -115,6 +115,7 @@ function getChromeRuntime(): ChromeRuntimeLike | undefined {
 const OptionsPage = () => {
   const mountTime = useRef(performance.now());
   const mountBudgetMs = useRef(1000);
+  const hideFloatingControllerForE2E = new URLSearchParams(window.location.search).get("e2eHideFloatingController") === "1";
   const { isComplete, loading: onboardingLoading, completeOnboarding } = useOnboarding();
   const { projects, loading: pLoading, save: pSave, remove: pRemove } = useProjects();
   const { scripts, loading: sLoading, save: sSave, remove: sRemove } = useScripts();
@@ -388,7 +389,7 @@ const OptionsPage = () => {
       <div className="min-h-screen flex w-full">
         {stateMarker}
         <Toaster />
-        <FloatingControllerHost />
+        {hideFloatingControllerForE2E ? null : <FloatingControllerHost />}
         <OptionsSidebar selection={selection} onSelect={handleSidebarSelect} onErrorDrawerOpen={() => setErrorDrawerOpen(true)} />
 
         <div className="flex-1 flex flex-col">
