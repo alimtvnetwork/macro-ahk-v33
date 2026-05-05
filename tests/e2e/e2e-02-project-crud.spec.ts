@@ -255,7 +255,18 @@ async function openProjectsView(context: BrowserContext, extensionId: string): P
 }
 
 async function createProject(page: Page, name: string): Promise<void> {
-  await page.getByRole('button', { name: /^new project$/i }).click();
+  const newProjectBtn = page.getByRole('button', { name: /^new project$/i });
+  await expect(newProjectBtn).toBeVisible({ timeout: SETUP_TIMEOUT_MS });
+  await disableFloatingControllerHitTarget(page);
+  await newProjectBtn.evaluate((node) => {
+    if (!(node instanceof HTMLButtonElement)) {
+      throw new Error('[e2e-02] New Project target is not an HTML button.');
+    }
+    if (node.disabled) {
+      throw new Error('[e2e-02] New Project button is disabled.');
+    }
+    node.click();
+  });
   const nameInput = page.getByPlaceholder(/^project name$/i);
   await expect(nameInput).toBeVisible({ timeout: 10_000 });
   await nameInput.fill(name);
