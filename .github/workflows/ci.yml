@@ -1295,6 +1295,13 @@ jobs:
     needs: build-payment-banner-hider
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `actions: read` is required for `gh api .../actions/runs/.../artifacts`
+    # used by the "Resolve payment-banner-hider artifact URL + id" step.
+    # The workflow-level default (`contents: read`) is insufficient and
+    # produces a 403 "Resource not accessible by integration".
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout repository
@@ -1802,6 +1809,13 @@ jobs:
     name: Build · Chrome Extension
     needs: [spec-links, no-nested-template-literals, eslint-run-summary-types, contract-checkers-wired, cicd-index-sync, pascalcase-instruction-migration, report-standalone-registry, readme-conventions, typecheck-app, typecheck-standalone, lint-standalone, build-sdk, build-xpath, build-payment-banner-hider, build-macro-controller, build-prompts, casing-instruction-json]
     runs-on: ubuntu-latest
+    # `actions: read` is required for `gh api .../actions/runs/.../artifacts`
+    # used by the "Resolve payment-banner-hider artifact URL + id" step.
+    # Workflow-level default (`contents: read`) → 403 "Resource not
+    # accessible by integration".
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout repository
