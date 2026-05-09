@@ -205,7 +205,7 @@ function annotateKeys(file, violations, shape) {
         const v = violations[i];
         process.stdout.write(
             `::error file=${file},title=${expected} casing violation::` +
-            ghEscapeMessage(`${v.path}  →  "${v.key}"  (expected ${expected})`) +
+            ghEscapeMessage(`${v.path}  ->  "${v.key}"  (expected ${expected})`) +
             `\n`,
         );
     }
@@ -383,19 +383,18 @@ function resolveProjectArg(arg) {
 
 function reportProject(name, result) {
     if (result.skipped) {
-        console.log(`ℹ  ${name} — skipped (${result.reason})`);
+        console.log(`[INFO] ${name} - skipped (${result.reason})`);
         return { exit: 0, failures: [] };
     }
     if (result.missingArtifact) {
         const distAbs = resolve(REPO_ROOT, result.distDir);
         process.stderr.write(
-            `\n┌─ ✗ ${name} — dist artifacts missing ─────────────────────────\n` +
-            `│  dist dir (relative): ${rel(result.distDir)}\n` +
-            `│  dist dir (absolute): ${distAbs}\n` +
-            `│    instruction.json:        ${result.canonicalExists ? "present" : "MISSING"}\n` +
-            `│    instruction.compat.json: ${result.compatExists ? "present" : "MISSING"}\n` +
-            `│  Fix: run \`node scripts/compile-instruction.mjs standalone-scripts/${name}\` before this check.\n` +
-            `└──────────────────────────────────────────────────────────────\n\n`,
+            `\n[FAIL] ${name} - dist artifacts missing\n` +
+            `  dist dir (relative): ${rel(result.distDir)}\n` +
+            `  dist dir (absolute): ${distAbs}\n` +
+            `    instruction.json:        ${result.canonicalExists ? "present" : "MISSING"}\n` +
+            `    instruction.compat.json: ${result.compatExists ? "present" : "MISSING"}\n` +
+            `  Fix: run \`node scripts/compile-instruction.mjs standalone-scripts/${name}\` before this check.\n\n`,
         );
         return { exit: 2, failures: [] };
     }
