@@ -25,8 +25,8 @@
 if (-not $env:SIBLING_DISCOVERY_ENABLED) { $script:SiblingDiscoveryEnabled = '0' } else { $script:SiblingDiscoveryEnabled = $env:SIBLING_DISCOVERY_ENABLED }
 
 # Pattern for sibling repo names. {N} = next sibling integer, {base} =
-# the current repo's bare name. For this repo (macro-ahk-v31), siblings
-# would be macro-ahk-v31, macro-ahk-v31, …
+# the current repo's bare name. For this repo (macro-ahk-v32), siblings
+# would be macro-ahk-v32, macro-ahk-v32, …
 if (-not $env:SIBLING_NAME_PATTERN) { $script:SiblingNamePattern = 'macro-ahk-v{N}' } else { $script:SiblingNamePattern = $env:SIBLING_NAME_PATTERN }
 
 # How many versions ahead to probe. Default per spec §4 = 20.
