@@ -82,6 +82,30 @@ const TOOLBAR_CSS = `
     align-self: center; padding: 0 8px;
     text-transform: uppercase; letter-spacing: .08em; font-size: 10px;
 }
+.project {
+    align-self: center; display: none; align-items: center; gap: 6px;
+    padding: 4px 8px; border-radius: 999px;
+    background: #1f2937; color: #e5e7eb;
+    font-size: 11px; max-width: 220px;
+}
+.project[data-active="true"] { display: inline-flex; }
+.project .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ef4444; box-shadow: 0 0 0 0 rgba(239,68,68,.7);
+    animation: marco-pulse 1.4s infinite;
+}
+.project[data-phase="Paused"] .dot {
+    background: #f59e0b; animation: none;
+}
+.project .label {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 180px; font-weight: 600;
+}
+@keyframes marco-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.6); }
+    70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
 `;
 
 /* ------------------------------------------------------------------ */
@@ -114,11 +138,22 @@ export function mountRecorderToolbar(
     const phaseLabel = document.createElement("span");
     phaseLabel.className = "phase";
 
+    const projectChip = document.createElement("span");
+    projectChip.className = "project";
+    projectChip.setAttribute("aria-label", "Active recording project");
+    projectChip.title = `Steps will be saved to project: ${options.ProjectSlug}`;
+    const projectDot = document.createElement("span");
+    projectDot.className = "dot";
+    const projectText = document.createElement("span");
+    projectText.className = "label";
+    projectText.textContent = options.ProjectSlug;
+    projectChip.append(projectDot, projectText);
+
     const startBtn = makeButton("start", "Start");
     const pauseBtn = makeButton("pause", "Pause");
     const stopBtn  = makeButton("stop", "Stop");
 
-    bar.append(phaseLabel, startBtn, pauseBtn, stopBtn);
+    bar.append(phaseLabel, projectChip, startBtn, pauseBtn, stopBtn);
     root.appendChild(bar);
     container.appendChild(host);
 
@@ -151,6 +186,10 @@ export function mountRecorderToolbar(
     function render(): void {
         const phase = session.Phase;
         phaseLabel.textContent = phase;
+
+        const isActive = phase === "Recording" || phase === "Paused";
+        projectChip.dataset.active = isActive ? "true" : "false";
+        projectChip.dataset.phase = phase;
 
         startBtn.disabled = phase !== "Idle";
         stopBtn.disabled  = phase === "Idle";
