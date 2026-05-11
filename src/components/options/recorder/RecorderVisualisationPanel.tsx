@@ -202,6 +202,15 @@ export default function RecorderVisualisationPanel({ projectSlug }: Props) {
         [projectSlug, setStepLink],
     );
 
+    /* Forward load failures into the global Error Drawer (once per error). */
+    useEffect(() => {
+        if (error === null) { return; }
+        logError(
+            "RecorderVisualisationPanel.load",
+            `useRecorderProjectData failed for project='${projectSlug}': ${error}`,
+        );
+    }, [error, projectSlug]);
+
     const handleExport = useCallback(
         (format: ExportFormat) => {
             if (data === null) { return; }
