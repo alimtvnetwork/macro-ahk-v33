@@ -232,9 +232,48 @@ export function mountRecorderToolbar(
             pauseBtn.dataset.action = "pause";
             pauseBtn.disabled = phase !== "Recording";
         }
+
+        renderHealth();
+    }
+
+    function renderHealth(): void {
+        const phase = session.Phase;
+        const stepCount = session.Steps.length;
+        const lastStep = stepCount > 0 ? session.Steps[stepCount - 1] : null;
+        const projectOk = options.ProjectSlug.length > 0;
+
+        let status: "idle" | "ok" | "warn" | "error" = "idle";
+        if (!projectOk) {
+            status = "error";
+        } else if (phase === "Recording") {
+            status = stepCount > 0 ? "ok" : "warn";
+        } else if (phase === "Paused") {
+            status = "warn";
+        } else {
+            status = "idle";
+        }
+        healthChip.dataset.status = status;
+
+        const projectLabel = projectOk ? options.ProjectSlug : "no project";
+        healthText.textContent = `${projectLabel} · ${stepCount} step${stepCount === 1 ? "" : "s"}`;
+
+        if (lastStep === null) {
+            healthCapture.textContent = phase === "Idle" ? "not recording" : "awaiting capture";
+        } else {
+            healthCapture.textContent = `last ${formatRelative(lastStep.CapturedAt, options.Now())}`;
+        }
+
+        healthChip.title =
+            `Project: ${projectLabel}\n` +
+            `Phase: ${phase}\n` +
+            `Steps captured: ${stepCount}\n` +
+            `Last capture: ${lastStep?.CapturedAt ?? "—"}`;
     }
 
     render();
+    const tickInterval = (typeof window !== "undefined")
+        ? window.setInterval(() => { renderHealth(); }, 1000)
+        : 0;
 
     let destroyed = false;
     return {
