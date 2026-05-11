@@ -287,6 +287,9 @@ export function mountRecorderToolbar(
         Destroy: () => {
             if (destroyed) { return; }
             destroyed = true;
+            if (tickInterval !== 0 && typeof window !== "undefined") {
+                window.clearInterval(tickInterval);
+            }
             host.remove();
         },
     };
