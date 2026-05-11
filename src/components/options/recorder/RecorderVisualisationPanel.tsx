@@ -21,8 +21,16 @@ import {
 import { sendMessage } from "@/lib/message-client";
 import { RecorderStepGraph } from "./RecorderStepGraph";
 import { RecorderStepDetail } from "./RecorderStepDetail";
-import { Loader2, Database } from "lucide-react";
+import { downloadRecorderExport, type ExportFormat } from "./recorder-export";
+import { Loader2, Database, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface Props {
@@ -158,6 +166,22 @@ export default function RecorderVisualisationPanel({ projectSlug }: Props) {
         [setStepLink],
     );
 
+    const handleExport = useCallback(
+        (format: ExportFormat) => {
+            if (data === null) { return; }
+            if (data.steps.length === 0) {
+                toast.error("Nothing to export — no steps recorded yet.");
+                return;
+            }
+            try {
+                downloadRecorderExport({ projectSlug, data, tagsByStep }, format);
+                toast.success(`Exported ${data.steps.length} step(s) as ${format.toUpperCase()}`);
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Export failed");
+            }
+        },
+        [data, projectSlug, tagsByStep],
+    );
     if (loading) {
         return (
             <div className="flex items-center gap-2 text-xs text-muted-foreground p-4">
@@ -178,7 +202,7 @@ export default function RecorderVisualisationPanel({ projectSlug }: Props) {
 
     return (
         <div className="space-y-4">
-            {/* Data sources summary */}
+            {/* Header: data sources summary + export */}
             <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                     Data Sources:
@@ -193,6 +217,34 @@ export default function RecorderVisualisationPanel({ projectSlug }: Props) {
                         </Badge>
                     ))
                 )}
+                <div className="ml-auto">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5"
+                                disabled={data.steps.length === 0}
+                                title={
+                                    data.steps.length === 0
+                                        ? "Record at least one step before exporting"
+                                        : `Export ${data.steps.length} step(s)`
+                                }
+                            >
+                                <Download className="h-3.5 w-3.5" />
+                                Export
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleExport("json")}>
+                                Download as JSON
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExport("csv")}>
+                                Download as CSV
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
 
             {/* Two-column layout */}
