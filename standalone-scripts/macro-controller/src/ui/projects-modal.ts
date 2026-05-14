@@ -466,12 +466,12 @@ async function exportCsv(statusEl: HTMLElement): Promise<void> {
             isOpenInChrome: tabIsOpen ? 'yes' : 'no',
             gitRepo: git.repo,
             gitBranch: git.branch,
-            lastCommunication: git.lastMessageAt,
+            lastCommunication: git.error ? '' : (git.lastMessageAt || '(no data returned by API)'),
             gitFetchError: git.error,
             extensionVersion: VERSION,
             exportedAt,
         });
-        statusEl.textContent = 'Fetching git info: ' + i + ' / ' + tasks.length
+        statusEl.textContent = 'Fetching git + last communication: ' + i + ' / ' + tasks.length
             + ' (' + Math.round((i / tasks.length) * 100) + '%)';
     }
 
