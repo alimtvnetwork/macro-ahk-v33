@@ -118,6 +118,8 @@ async function loadAndRender(body: HTMLElement): Promise<void> {
         return { ws, projects: null, error: null, loading: true };
     });
     const tabIndex = await openTabsPromise;
+    state.blocks = blocks;
+    state.tabIndex = tabIndex;
     body.innerHTML = renderAll(blocks, tabIndex, null);
     attachRowClicks(body);
 
@@ -130,6 +132,7 @@ async function loadAndRender(body: HTMLElement): Promise<void> {
             const msg = err instanceof Error ? err.message : String(err);
             blocks[i] = { ws, projects: null, error: msg, loading: false };
         }).then(function () {
+            state.blocks = blocks;
             // Re-render after each completes for incremental feedback.
             body.innerHTML = renderAll(blocks, tabIndex, null);
             attachRowClicks(body);
