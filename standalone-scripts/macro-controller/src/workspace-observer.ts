@@ -321,7 +321,11 @@ function scheduleObserverRetry(): void {
   if (retryNum < WORKSPACE_OBSERVER_MAX_RETRIES) {
     const retryDelay = Math.min(retryNum * 3000, 15000);
     log('Workspace observer: element not found — retry ' + retryNum + '/' + WORKSPACE_OBSERVER_MAX_RETRIES + ' in ' + (retryDelay / 1000) + 's', 'warn');
-    setTimeout(startWorkspaceObserver, retryDelay);
+    const handle = setTimeout(function () {
+      wsObserverState.untrackTimer(handle);
+      startWorkspaceObserver();
+    }, retryDelay);
+    wsObserverState.trackTimer(handle);
   } else {
     logError('Workspace observer', 'gave up after \' + WORKSPACE_OBSERVER_MAX_RETRIES + \' retries. Set WorkspaceNavXPath in config.ini.');
   }
