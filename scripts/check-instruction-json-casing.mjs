@@ -333,18 +333,25 @@ function checkProject(projectName) {
     if (!existsSync(tsPath)) {
         return { skipped: true, reason: "no src/instruction.ts" };
     }
-    if (!existsSync(canonical) || !existsSync(compat)) {
+    if (!existsSync(canonical)) {
         return {
             missingArtifact: true,
-            canonicalExists: existsSync(canonical),
+            canonicalExists: false,
             compatExists: existsSync(compat),
             distDir,
         };
     }
 
     const canonicalResult = scanArtifact(canonical, isLegalPascalKey, "PascalCase");
-    const compatResult = scanArtifact(compat, isLegalCamelKey, "camelCase");
-    return { canonical, compat, canonicalResult, compatResult };
+    // Phase 2c: the compat artifact is no longer emitted by
+    // compile-instruction.mjs. We still scan it when it happens to be
+    // present (e.g. truncation-test fixtures, stale dist from before
+    // the migration) so any lingering camelCase shape is verified;
+    // when it's absent the canonical-only path is the steady state.
+    const compatResult = existsSync(compat)
+        ? scanArtifact(compat, isLegalCamelKey, "camelCase")
+        : null;
+    return { canonical, compat: existsSync(compat) ? compat : null, canonicalResult, compatResult };
 }
 
 /* ----------------------------------------------------------------- */
@@ -402,10 +409,13 @@ function reportProject(name, result) {
     let exit = 0;
     const failures = [];   // { project, label, shape, fileRel, fileAbs, kind, count }
 
-    for (const [label, file, res, shape] of [
+    const artifacts = [
         ["canonical", result.canonical, result.canonicalResult, "PascalCase"],
-        ["compat   ", result.compat, result.compatResult, "camelCase"],
-    ]) {
+    ];
+    if (result.compat && result.compatResult) {
+        artifacts.push(["compat   ", result.compat, result.compatResult, "camelCase"]);
+    }
+    for (const [label, file, res, shape] of artifacts) {
         const fileRel = rel(file);
         const fileAbs = resolve(REPO_ROOT, file);
 
@@ -583,8 +593,13 @@ function buildJsonProjectEntry(name, result) {
     };
 
     const canonical = buildArtifact(result.canonical, result.canonicalResult, "PascalCase");
-    const compat = buildArtifact(result.compat, result.compatResult, "camelCase");
-    const exitCode = canonical.ok && compat.ok && !canonical.parseError && !compat.parseError && !canonical.walkAborted && !compat.walkAborted ? 0 : 1;
+    const compat = result.compat && result.compatResult
+        ? buildArtifact(result.compat, result.compatResult, "camelCase")
+        : null;
+    const compatOk = compat === null
+        ? true
+        : (compat.ok && !compat.parseError && !compat.walkAborted);
+    const exitCode = canonical.ok && compatOk && !canonical.parseError && !canonical.walkAborted ? 0 : 1;
 
     return {
         name,
