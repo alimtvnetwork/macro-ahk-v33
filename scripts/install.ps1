@@ -75,6 +75,7 @@ Remove-Variable __constCandidate -ErrorAction SilentlyContinue
 if (-not $script:MarcoDefaultRepo)        { $script:MarcoDefaultRepo        = 'alimtvnetwork/macro-ahk-v33' }
 if (-not $script:MarcoVersionRegex)       { $script:MarcoVersionRegex       = '^v\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$' }
 if (-not $script:MarcoMainBranchSentinel) { $script:MarcoMainBranchSentinel = '__MAIN_BRANCH__' }
+if (-not $script:MarcoMainBranch)         { $script:MarcoMainBranch         = if ($env:MARCO_MAIN_BRANCH) { $env:MARCO_MAIN_BRANCH } else { 'main' } }
 
 if ([string]::IsNullOrEmpty($Repo)) { $Repo = $script:MarcoDefaultRepo }
 
