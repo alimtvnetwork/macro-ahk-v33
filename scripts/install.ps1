@@ -75,6 +75,7 @@ Remove-Variable __constCandidate -ErrorAction SilentlyContinue
 if (-not $script:MarcoDefaultRepo)        { $script:MarcoDefaultRepo        = 'alimtvnetwork/macro-ahk-v33' }
 if (-not $script:MarcoVersionRegex)       { $script:MarcoVersionRegex       = '^v\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$' }
 if (-not $script:MarcoMainBranchSentinel) { $script:MarcoMainBranchSentinel = '__MAIN_BRANCH__' }
+if (-not $script:MarcoMainBranch)         { $script:MarcoMainBranch         = if ($env:MARCO_MAIN_BRANCH) { $env:MARCO_MAIN_BRANCH } else { 'main' } }
 
 if ([string]::IsNullOrEmpty($Repo)) { $Repo = $script:MarcoDefaultRepo }
 
@@ -144,11 +145,33 @@ function Get-VersionFromUrl {
 function Get-LatestVersion {
     Write-Step "Resolving latest release from $Repo (via $script:ApiBase)..."
     $url = "$script:ApiBase/repos/$Repo/releases/latest"
+
+    # Two-stage probe (mirrors install.sh fetch_latest_version, spec §2 step 5 / AC-2):
+    #   - 200 OK + tag_name           → return tag
+    #   - 200 OK + missing tag_name   → return MainBranchSentinel
+    #   - 404 (no releases at all)    → return MainBranchSentinel
+    #   - 5xx / network failures      → exit 5
     try {
-        $release = Invoke-RestMethod -Uri $url -UseBasicParsing
-        return $release.tag_name
+        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
+        $body = $null
+        try { $body = $response.Content | ConvertFrom-Json -ErrorAction Stop } catch { $body = $null }
+        if ($null -ne $body -and $body.PSObject.Properties['tag_name'] -and -not [string]::IsNullOrEmpty($body.tag_name)) {
+            return $body.tag_name
+        }
+        # 200 OK + no tag → zero releases. Spec §2 step 5 / AC-2.
+        $script:MainFallback = $true
+        return $script:MarcoMainBranchSentinel
     }
     catch {
+        $statusCode = $null
+        if ($_.Exception.PSObject.Properties['Response'] -and $_.Exception.Response) {
+            try { $statusCode = [int]$_.Exception.Response.StatusCode } catch { $statusCode = $null }
+        }
+        if ($statusCode -eq 404) {
+            # 404 = "no published releases" per GitHub API. AC-2 fallback.
+            $script:MainFallback = $true
+            return $script:MarcoMainBranchSentinel
+        }
         Write-Err "Failed to fetch latest release: $_"
         Write-Err "Spec §2.3: discovery-mode API failure exits 5."
         exit 5
@@ -378,6 +401,13 @@ $script:MarcoOwnerSignature = 'marco-installer'
 # --- Download ---
 
 function Get-Asset([string]$version) {
+    # Spec §2 step 5 / AC-2: when Get-LatestVersion returned the
+    # main-branch sentinel, switch to the source tarball off the default
+    # branch instead of a release ZIP. Discovery mode only.
+    if ($version -eq $script:MarcoMainBranchSentinel) {
+        return Get-MainBranchTarball
+    }
+
     $assetName = "marco-extension-${version}.zip"
     $assetUrl = "$script:DownloadBase/$Repo/releases/download/$version/$assetName"
 
@@ -405,6 +435,38 @@ function Get-Asset([string]$version) {
     Write-OK "Downloaded successfully."
     Test-Checksum -Version $version -AssetName $assetName -ZipPath $zipPath -TmpDir $tmpDir
     return @{ ZipPath = $zipPath; TmpDir = $tmpDir }
+}
+
+# Fetch the source tarball from the configured main branch. Spec §2
+# step 5 / AC-2 fallback when the release host is reachable but reports
+# zero releases. NOT subject to checksums.txt (the file lives in
+# releases, not in branches), and NOT subject to exit 4 — a missing main
+# branch is a network/tooling problem and exits 5 (spec §2.3).
+function Get-MainBranchTarball {
+    $branch = $script:MarcoMainBranch
+    $repoLeaf = ($Repo -split '/')[-1]
+    $archiveName = "$repoLeaf-$branch.tar.gz"
+    $archiveUrl  = "$script:DownloadBase/$Repo/archive/refs/heads/$branch.tar.gz"
+
+    $tmpDir = Join-Path $env:TEMP "marco-install-$script:MarcoRunId"
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    $archivePath = Join-Path $tmpDir $archiveName
+
+    Write-Step "Downloading main-branch tarball ($branch)..."
+    try {
+        Invoke-WebRequest -Uri $archiveUrl -OutFile $archivePath -UseBasicParsing
+    }
+    catch {
+        Write-Err "Main-branch tarball download failed: $_"
+        Write-Err "URL: $archiveUrl"
+        Write-Err ""
+        Write-Err "Spec §2.3: discovery-mode network failure exits 5."
+        Remove-PathSafely -Path $tmpDir -Reason "failed-mainbranch-download cleanup" | Out-Null
+        exit 5
+    }
+
+    Write-OK "Downloaded successfully."
+    return @{ ZipPath = $archivePath; TmpDir = $tmpDir }
 }
 
 # --- Checksum verification (spec/14-update §7.1, §8 rule 2) ---
@@ -995,8 +1057,11 @@ function Main {
     # Strict mode = URL-pinned OR explicit semver -Version (NOT 'latest').
     $isExplicitPin = ($Version -ne '' -and $Version -ine 'latest')
     $isStrict = $urlPinned -or $isExplicitPin
+    $isMainFallback = ($resolvedVersion -eq $script:MarcoMainBranchSentinel)
     if ($isStrict) {
         Write-Step "🔒 Strict mode — pinned to $resolvedVersion"
+    } elseif ($isMainFallback) {
+        Write-Step "🌿 Discovery mode — main branch (no releases found)"
     } else {
         Write-Step "🌊 Discovery mode — resolved $resolvedVersion"
     }
@@ -1035,9 +1100,12 @@ function Main {
         Remove-PathSafely -Path $result.TmpDir -Reason "post-install temp cleanup"
     }
 
-    $resolvedVersion | Set-Content (Join-Path $resolvedDir "VERSION")
+    # Mirror install.sh: main-branch fallback records "<branch>@HEAD"
+    # instead of the sentinel to keep VERSION human-readable.
+    $recordedVersion = if ($isMainFallback) { "$script:MarcoMainBranch@HEAD" } else { $resolvedVersion }
+    $recordedVersion | Set-Content (Join-Path $resolvedDir "VERSION")
 
-    return @{ InstallDir = $resolvedDir; Version = $resolvedVersion; UrlPinned = $urlPinned }
+    return @{ InstallDir = $resolvedDir; Version = $recordedVersion; UrlPinned = $urlPinned }
 }
 
 # Test-harness guard: when $env:MARCO_INSTALLER_TEST_MODE is "1", the

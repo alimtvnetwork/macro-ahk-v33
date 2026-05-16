@@ -6,6 +6,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [v2.249.2] — 2026-05-16 install.ps1 — AC-2 main-branch fallback parity
+
+### Changed
+- **`scripts/install.ps1`** — `Get-LatestVersion` now distinguishes (a) 200 OK + tag → tag, (b) 200 OK + missing `tag_name` → `__MAIN_BRANCH__` sentinel, (c) 404 → sentinel, (d) 5xx / network failure → exit 5. Mirrors `install.sh fetch_latest_version`.
+- **`scripts/install.ps1`** — added `Get-MainBranchTarball` that downloads `https://github.com/$Repo/archive/refs/heads/$branch.tar.gz`, no checksum (file lives in releases, not branches), and exits 5 on network failure.
+- **`scripts/install.ps1`** — `Get-Asset` routes through `Get-MainBranchTarball` when the resolved version equals the sentinel.
+- **`scripts/install.ps1`** — Main banner emits `🌿 Discovery mode — main branch (no releases found)` on fallback; VERSION file records `<branch>@HEAD` instead of the sentinel.
+- **`scripts/install.ps1`** — added `$script:MarcoMainBranch` default (`main`, overridable via `MARCO_MAIN_BRANCH` env).
+
+### Docs
+- **`.lovable/memory/suggestions/20260424-1900-suggestion-installer-ac2-main-branch-fallback.md`** — status updated to fully implemented (sh + ps1).
+
+---
+
 ## [v2.249.1] — 2026-05-16 Open-tabs workspace mapping memory written
 
 ### Docs
