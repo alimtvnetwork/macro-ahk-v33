@@ -71,6 +71,10 @@ export interface OpenLovableTabInfo {
     detectedWorkspaceSource: DetectedWorkspaceSource | null;
     /** Why the probe did not return data — null on success, a short reason on failure. */
     probeError: string | null;
+    /** Short Reason code per LOG-1; null on success. */
+    probeFailureReason: ProbeFailureReason | null;
+    /** Human-readable detail for the Reason code; null on success. */
+    probeFailureReasonDetail: string | null;
     /** Which project URL rule the tab matched (when any). Lets the panel explain why this binding was chosen. */
     matchedRule: MatchedRuleInfo | null;
 }
