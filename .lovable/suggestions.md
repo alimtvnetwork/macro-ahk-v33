@@ -35,10 +35,11 @@
 - **Resolution:** New file `src/test/regression/handler-guards.test.ts` adds **27 tests** across 4 describe blocks (kv-handler 9, grouped-kv-handler 7, file-storage-handler 7, project-api-handler 4). Strongest invariant verified: when a required field is missing, the underlying SQLite Database is **never touched** (no `prepare`/`run`/`exec` calls) — proven via call-tracking fake DbManager. Also verifies error-message shape (`[<op>]` prefix + `'<field>'` name) and edge cases (empty-string, non-string, both-missing ordering). Full suite: **478/478** passing in `npx vitest run`.
 
 ### Hook `BindError` into the global Errors panel reporter
-- **Status:** Pending
+- **Status:** ✅ Implemented — 2026-05-16 (verified against existing code)
 - **Priority:** Low
 - **Description:** Any future undefined-bind escape should auto-land in the Errors panel with column + SQL preview, not just the message-router log.
 - **Added:** 2026-04-20
+- **Resolution:** `src/background/message-router.ts` `buildErrorResponse` (lines 139–177) special-cases `error instanceof BindError` and routes it through `logBgError(BgLogTag.SQLITE_BIND, "SQLITE_BIND_ERROR", …, { contextDetail })` carrying `paramIndex`, `columnName`, and SQL preview. That tag lands in the Errors table consumed by the Errors panel, so escapes are visually surfaced (not silently swallowed).
 
 ### Audit remaining 8 SQLite-backed handlers for handler-guards adoption
 - **Status:** ✅ Implemented — 2026-04-20 (v2.167.0)
