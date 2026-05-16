@@ -253,6 +253,7 @@ export function stepRowToReplayInput(step: StepRow): ReplayStepInput {
                 + `it is dispatched by executeUrlTabClick against the tabs adapter.`,
             );
         }
+        case StepKindId.Hotkey: {
             // Hotkey (AutoHotkey-style chord macro) is dispatched by a
             // dedicated keyboard executor — not the selector-based
             // replay bridge. Surface a precise reason so the failure
