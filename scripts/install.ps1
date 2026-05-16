@@ -594,6 +594,7 @@ function Test-Signature {
 }
 
 
+# --- Reboot-safe delete (Windows MoveFileEx + scheduled-task fallback) ---
 #
 # Windows file deletion fails with ERROR_SHARING_VIOLATION / ACCESS_DENIED
 # when another process (typically Chrome holding the loaded extension's
