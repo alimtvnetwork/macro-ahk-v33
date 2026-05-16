@@ -10,9 +10,8 @@ async function buildZipWith(entries: Record<string, Uint8Array>): Promise<Uint8A
   const zip = new JSZip();
   for (const [name, bytes] of Object.entries(entries)) {
     // JSZip in jsdom is picky about Uint8Array from polyfilled TextEncoder;
-    // pass a fresh ArrayBuffer copy so it routes through the binary path.
-    const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-    zip.file(name, buf);
+    // hand it a plain number[] so it routes through the binary path.
+    zip.file(name, Array.from(bytes));
   }
   return new Uint8Array(await zip.generateAsync({ type: "uint8array" }));
 }
