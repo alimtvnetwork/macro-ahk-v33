@@ -9,7 +9,9 @@ import { loadCachedBundle } from "./setup-helpers";
 async function buildZipWith(entries: Record<string, Uint8Array>): Promise<Uint8Array> {
   const zip = new JSZip();
   for (const [name, bytes] of Object.entries(entries)) {
-    zip.file(name, bytes);
+    // JSZip in jsdom is picky about Uint8Array from polyfilled TextEncoder;
+    // hand it a plain number[] so it routes through the binary path.
+    zip.file(name, Array.from(bytes));
   }
   return new Uint8Array(await zip.generateAsync({ type: "uint8array" }));
 }
