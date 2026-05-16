@@ -207,7 +207,6 @@ async function main() {
     const tsPath = join(folder, "src", "instruction.ts");
     const distDir = join(folder, "dist");
     const canonicalOutPath = join(distDir, "instruction.json");
-    const compatOutPath = join(distDir, "instruction.compat.json");
 
     if (!existsSync(tsPath)) {
         console.log(`[INFO] No instruction.ts in ${folderArg}/src/ - skipping`);
@@ -217,22 +216,18 @@ async function main() {
     const source = readFileSync(tsPath, "utf-8");
     const obj = pinSchemaVersion(evaluateInstructionSource(source, tsPath), tsPath, folderArg);
 
-    // The source MUST already be PascalCase (Phase 1 rename). We pass it
-    // through unchanged - no alias injection - so `instruction.json` is
-    // the canonical, single-spelling artifact.
+    // Phase 2c: dual-emit retired. We emit ONLY the canonical
+    // PascalCase artifact. The transitional `instruction.compat.json`
+    // (camelCase snapshot) is no longer written — every runtime
+    // consumer reads PascalCase. `toCamelCaseTree` is retained
+    // upstream as dead code for now in case a future migration needs
+    // it; tree-shake or remove on a follow-up pass.
     const canonical = obj;
-
-    // Compat snapshot: recursively-converted camelCase tree. No
-    // PascalCase keys remain. This is the file the not-yet-migrated
-    // vite copyProjectScripts plugin reads.
-    const compat = toCamelCaseTree(obj);
 
     mkdirSync(distDir, { recursive: true });
     writeFileSync(canonicalOutPath, JSON.stringify(canonical, null, 2) + "\n", "utf-8");
-    writeFileSync(compatOutPath, JSON.stringify(compat, null, 2) + "\n", "utf-8");
 
-    console.log(`[OK] Compiled instruction.json         -> ${canonicalOutPath} (PascalCase, canonical)`);
-    console.log(`[OK] Compiled instruction.compat.json  -> ${compatOutPath} (camelCase, transitional)`);
+    console.log(`[OK] Compiled instruction.json -> ${canonicalOutPath} (PascalCase, canonical)`);
 }
 
 main().catch((err) => {
