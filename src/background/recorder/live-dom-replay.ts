@@ -40,6 +40,11 @@ import { evaluateAllSelectors } from "./selector-attempt-evaluator";
 import { resolveVerboseLogging } from "./verbose-logging";
 import { waitForElement, type WaitForSpec } from "./wait-for-element";
 import { readStepWait, type WaitConfig } from "./step-library/step-wait";
+import {
+    waitForCondition,
+    type Condition,
+    type ConditionWaitOutcome,
+} from "./condition-evaluator";
 
 const SOURCE_FILE = "src/background/recorder/live-dom-replay.ts";
 
